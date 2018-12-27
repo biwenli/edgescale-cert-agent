@@ -1,0 +1,30 @@
+#####################################
+#
+# Copyright 2017 NXP
+#
+#####################################
+
+INSTALL_DIR ?= /
+INSTALL ?= install
+
+SECURE_OBJ_PATH ?= $(shell pwd)/../../secure_obj/securekey_lib/out/export
+OPENSSL_PATH ?= $(shell pwd)/../../openssl
+OPTEE_CLIENT_EXPORT ?= $(shell pwd)/../../optee_client/out/libteec
+
+ARCH ?= arm64
+CROSS_COMPILE ?= aarch64-linux-gnu-
+CC := ${CROSS_COMPILE}gcc
+CGO_LDFLAGS += -L${SECURE_OBJ_PATH}/lib -L${OPENSSL_PATH} -L${OPTEE_CLIENT_EXPORT}
+CGO_CFLAGS += -I${SECURE_OBJ_PATH}/include -I${OPENSSL_PATH}/include
+
+
+all:
+	go get github.com/laurentluce/est-client-go
+	env CGO_ENABLED=1 GOOS=linux GOARCH=${ARCH} CC=${CC} CGO_CFLAGS="${CGO_CFLAGS}" CGO_LDFLAGS="${CGO_LDFLAGS}" go build --ldflags="-w -s" cert-agent.go
+
+clean:
+	rm -f cert-agent
+
+install:
+	$(INSTALL) -d --mode 755 $(INSTALL_DIR)/usr/local/bin
+	sudo cp -r cert-agent $(INSTALL_DIR)/usr/local/bin/
